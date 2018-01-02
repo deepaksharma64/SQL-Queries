@@ -1,0 +1,323 @@
+#############################################MySQL Exercise 6: Common Pitfalls of Grouped Queries################################################
+
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb
+
+
+Question 1: What does the Month column represent in this output? Take a look and see what you think:
+%%sql
+SELECT test_name, MONTH(created_at) AS Month, COUNT(created_at) AS Num_Completed_Tests
+FROM complete_tests
+GROUP BY test_name
+ORDER BY test_name ASC, Month ASC
+
+
+Question 2: What does test_name mean in this case? Try it out:
+%%sql
+SELECT test_name, MONTH(created_at) AS Month, COUNT(created_at) AS Num_Completed_Tests
+FROM complete_tests
+GROUP BY Month
+ORDER BY Month ASC, test_name ASC;
+###########################################MySQL Exercise 7: Joining Tables with Inner Joins#######################################################
+
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb    
+
+Questions 1-4: How many unique dog_guids and user_guids are there in the reviews and dogs table independently?
+%%sql
+SELECT COUNT(DISTINCT dog_guid) FROM reviews
+%%sql
+SELECT COUNT(DISTINCT dog_guid) FROM dogs
+%%sql
+SELECT COUNT(DISTINCT user_guid) 
+FROM reviews
+%%sql
+SELECT COUNT(DISTINCT user_guid) 
+FROM dogs
+
+##Try the inner join query once with just the dog_guid or once with just the user_guid clause in the WHERE statement:
+
+%%sql
+SELECT d.dog_guid AS DogID, d.user_guid AS UserID, AVG(r.rating) AS AvgRating, 
+       COUNT(r.rating) AS NumRatings, d.breed, d.breed_group, d.breed_type
+FROM dogs d, reviews r
+WHERE d.dog_guid=r.dog_guid
+GROUP BY UserID, DogID, d.breed, d.breed_group, d.breed_type
+ORDER BY AvgRating DESC
+
+%%sql
+SELECT d.dog_guid AS DogID, d.user_guid AS UserID, AVG(r.rating) AS AvgRating, 
+       COUNT(r.rating) AS NumRatings, d.breed, d.breed_group, d.breed_type
+FROM dogs d, reviews r
+WHERE d.user_guid=r.user_guid
+GROUP BY UserID, DogID, d.breed, d.breed_group, d.breed_type
+ORDER BY AvgRating DESC
+Question 5: How would you extract the user_guid, dog_guid, breed, breed_type, and breed_group for all animals who completed 
+the "Yawn Warm-up" game (you should get 20,845 rows if you join on dog_guid only)?
+
+%%sql
+SELECT d.dog_guid AS DogID, d.user_guid AS UserID,d.breed, d.breed_group, d.breed_type,r.test_name
+FROM dogs d,complete_tests r 
+WHERE r.dog_guid=d.dog_guid AND r.test_name="Yawn Warm-up"
+GROUP BY UserID, DogID, d.breed, d.breed_group, d.breed_type,r.test_name
+
+
+
+Question 6: How would you extract the user_guid, membership_type, and dog_guid of all the golden retrievers who completed 
+at least 1 Dognition test (you should get 711 rows)?
+%%sql
+SELECT u.user_guid,u.membership_type,t.dog_guid,d.breed
+FROM  users u,complete_tests t,dogs d
+WHERE d.dog_guid=t.dog_guid 
+AND u.user_guid=d.user_guid
+AND breed="Golden Retriever"
+AND t.test_name !="NULL"
+GROUP BY u.user_guid,u.membership_type,t.dog_guid,d.breed
+
+
+Question 7: How many unique Golden Retrievers who live in North Carolina are there in the Dognition database (you should get 30)?
+%%sql
+SELECT breed,state,COUNT(DISTINCT dog_guid) AS Total
+FROM  users u,dogs d
+WHERE d.user_guid=u.user_guid 
+AND breed="Golden Retriever"
+AND state="NC"
+
+
+Question 8: How many unique customers within each membership type provided reviews (there should be 2900 in the membership type with the greatest number of customers, and 15 in the membership type with the 
+fewest number of customers if you do NOT include entries with NULL values in their ratings field)?
+%%sql
+SELECT COUNT(DISTINCT u.user_guid) AS customers,membership_type
+FROM  users u,reviews r
+WHERE r.user_guid=u.user_guid AND rating IS NOT NULL 
+group by membership_type
+
+
+Question 9: For which 3 dog breeds do we have the greatest amount of site_activity data, (as defined by non-NULL values in script_detail_id)(your answers should be "Mixed", 
+"Labrador Retriever", and "Labrador Retriever-Golden Retriever Mix"?
+%%sql
+SELECT DISTINCT breed,sum(script_detail_id)
+FROM  dogs d,site_activities s
+WHERE d.dog_guid=s.dog_guid AND script_detail_id IS NOT NULL
+group by breed
+ORDER BY sum(script_detail_id) DESC
+##############################################MySQL Exercise 8: Joining Tables with Outer Joins#################################
+
+
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb  
+
+
+Question 1: How would you re-write this query using the traditional join syntax?
+%%sql
+SELECT d.user_guid AS UserID, d.dog_guid AS DogID, d.breed, d.breed_type, d.breed_group
+FROM dogs d JOIN complete_tests c
+ON d.dog_guid=c.dog_guid
+WHERE test_name='Yawn Warm-up'
+
+
+Question 2: How could you retrieve this same information using a RIGHT JOIN?
+%%sql
+SELECT r.dog_guid AS rDogID, d.dog_guid AS dDogID, r.user_guid AS rUserID, d.user_guid AS dUserID, AVG(r.rating) AS AvgRating, COUNT(r.rating) 
+AS NumRatings, d.breed, d.breed_group, d.breed_type
+FROM  dogs d RIGHT JOIN reviews r
+ON r.dog_guid=d.dog_guid AND r.user_guid=d.user_guid
+WHERE r.dog_guid IS NOT NULL
+GROUP BY r.dog_guid
+HAVING NumRatings >= 10
+ORDER BY AvgRating DESC
+
+
+Question 3: How would you use a left join to retrieve a list of all the unique dogs in the dogs table, and retrieve a count of how many tests each 
+one completed? Include the dog_guids and user_guids from the dogs and complete_tests tables in your output. (If you do not limit your query, your 
+output should contain 35050 rows. HINT: use the dog_guid from the dogs table to group your results.)
+%%sql
+SELECT c.dog_guid AS cDogID, d.dog_guid AS dDogID, COUNT(test_name) AS total_tests
+FROM  dogs d LEFT JOIN complete_tests c
+ON d.dog_guid=c.dog_guid 
+WHERE d.dog_guid IS NOT NULL
+GROUP BY d.dog_guid
+ORDER BY total_tests DESC
+
+
+Question 4: Repeat the query you ran in Question 3, but intentionally use the dog_guids from the completed_tests table to group your results instead 
+of the dog_guids from the dogs table. (Your output should contain 17987 rows)
+%%sql
+SELECT c.dog_guid AS cDogID, d.dog_guid AS dDogID, COUNT(test_name) AS total_tests
+FROM  dogs d LEFT JOIN complete_tests c
+ON d.dog_guid=c.dog_guid 
+WHERE d.dog_guid IS NOT NULL
+GROUP BY c.dog_guid
+ORDER BY total_tests DESC
+
+
+Question 5: Write a query using COUNT DISTINCT to determine how many distinct dog_guids there are in the completed_tests table.
+%%sql
+SELECT COUNT(DISTINCT dog_guid)
+FROM complete_tests
+
+
+Question 6: We want to extract all of the breed information of every dog a user_guid in the users table owns. If a user_guid in the users table does not own a 
+dog, we want that information as well. Write a query that would return this information. Include the dog_guid from the
+dogs table, and user_guid from both the users and dogs tables in your output. (HINT: you should get 952557 rows in your output!)
+%%sql
+SELECT u.user_guid,breed,d.dog_guid,d.user_guid
+FROM users u LEFT JOIN dogs d
+ON u.user_guid=d.user_guid
+ORDER BY u.user_guid,breed,d.dog_guid
+There are only 35050 distinct dog_guids in the dogs table. Why is the database outputting almost a million rows? That can't be right. 
+Let's figure out what is going on.
+
+
+Question 7: Adapt the query you wrote above so that it counts the number of rows the join will output per user_id. Sort the results by 
+this count in descending order. Remember that if you include dog_guid or breed fields in this query, they will be randomly populated 
+by only one of the values associated with a user_guid (see MySQL Exercise 6; there should be 33,193 rows in your output).
+%%sql
+SELECT u.user_guid, COUNT(*),d.breed,d.dog_guid,d.user_guid
+FROM users u LEFT JOIN dogs d
+ON u.user_guid=d.user_guid
+GROUP BY u.user_guid
+ORDER BY COUNT(u.user_guid) DESC
+
+
+Question 8: How many rows in the users table are associated with user_guid 'ce225842-7144-11e5-ba71-058fbc01cf0b'?
+%%sql
+SELECT user_guid, COUNT(*)
+FROM users 
+WHERE user_guid= 'ce7b75bc-7144-11e5-ba71-058fbc01cf0b'
+
+
+Question 9: Examine all the rows in the dogs table that are associated with user_guid 'ce225842-7144-11e5-ba71-058fbc01cf0b'?
+%%sql
+SELECT *
+FROM dogs
+WHERE user_guid= "ce225842-7144-11e5-ba71-058fbc01cf0b" 
+
+
+Question 10: How would you write a query that used a left join to return the number of distinct user_guids that were in the
+users table, but not the dogs table (your query should return a value of 2226)?
+%%sql
+SELECT COUNT(DISTINCT u.user_guid)
+FROM users u LEFT JOIN dogs d
+ON u.user_guid = d.user_guid
+WHERE d.user_guid IS NULL
+
+
+Question 11: How would you write a query that used a right join to return the number of distinct user_guids that were in the
+users table, but not the dogs table (your query should return a value of 2226)?
+%%sql
+SELECT COUNT(u.user_guid)
+FROM  dogs d RIGHT JOIN users u
+ON u.user_guid = d.user_guid
+WHERE d.user_guid IS NULL
+
+
+Question 12: Use a left join to create a list of all the unique dog_guids that are contained in the site_activities table, but not the dogs table, and 
+how many times each one is entered. Note that there are a lot of NULL values in the dog_guid of the site_activities table, so you will want to exclude 
+them from your list. (Hint: if you exclude null values, the results you get will have two rows with words in their site_activities dog_guid fields instead 
+of real guids, due to mistaken entries)
+%%sql
+SELECT s.dog_guid
+FROM  site_activities s LEFT JOIN dogs d 
+ON s.dog_guid = d.dog_guid
+WHERE d.dog_guid IS NULL
+##############################################################MySQL Exercise 9: Subqueries and Derived Tables########################################
+
+
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb
+
+
+Question 1: How could you use a subquery to extract all the data from exam_answers that had test durations that were greater than the average duration for the 
+"Yawn Warm-Up" game? Start by writing the query that gives you the average duration for the "Yawn Warm-Up" game by itself (and don't forget to exclude negative 
+values; your average duration should be about 9934):
+%%sql
+SELECT AVG(TIMESTAMPDIFF(minute,start_time,end_time)) AS AvgDuration
+FROM exam_answers
+WHERE TIMESTAMPDIFF(minute,start_time,end_time)>0 AND test_name="Yawn Warm-Up"
+
+
+Question 2: Once you've verified that your subquery is written correctly on its own, incorporate it into a main query to extract all the data from exam_answers 
+that had test durations that were greater than the average duration for the "Yawn Warm-Up" game (you will get 11059 rows):
+%%sql
+SELECT *
+FROM exam_answers 
+WHERE TIMESTAMPDIFF(minute,start_time,end_time) >
+    (SELECT AVG(TIMESTAMPDIFF(minute,start_time,end_time)) AS AvgDuration
+     FROM exam_answers
+     WHERE TIMESTAMPDIFF(minute,start_time,end_time)>0 AND test_name="Yawn Warm-Up");
+
+
+Question 3: Use an IN operator to determine how many entries in the exam_answers tables are from the "Puzzles", "Numerosity", or "Bark Game" tests. 
+You should get a count of 163022
+%%sql
+SELECT COUNT(*)
+FROM exam_answers
+WHERE test_name IN ('Puzzles', 'Numerosity','Bark Game' )
+
+
+Question 4: Use a NOT IN operator to determine how many unique dogs in the dog table are NOT in the "Working", "Sporting", or "Herding" breeding groups. 
+You should get an answer of 7961.
+%%sql
+SELECT COUNT(DISTINCT dog_guid)
+FROM dogs
+WHERE breed_group NOT IN ('working', 'sporting','herding' )
+
+
+Question 5: How could you determine the number of unique users in the users table who were NOT in the dogs table using a NOT EXISTS clause? You should get 
+the 2226, the same result as you got in Question 10 of MySQL Exercise 8: Joining Tables with Outer Joins
+%%sql
+SELECT DISTINCT u.user_guid AS uUserID
+FROM users u
+WHERE NOT EXISTS (SELECT *
+              FROM dogs d 
+              WHERE u.user_guid =d.user_guid);
+
+
+Question 6: Write a query using an IN clause and equijoin syntax that outputs the dog_guid, breed group, state of the owner, and zip of the owner for each 
+distinct dog in the Working, Sporting, and Herding breed groups. (You should get 10,254 rows; the query will be a little slower than some of the others we 
+have practiced)
+%%sql
+SELECT DISTINCT d.dog_guid,d.breed_group,u.state,u.zip
+FROM dogs d,users u 
+WHERE d.user_guid=u.user_guid AND breed_group IN ('Working', 'Sporting','Herding')
+
+
+Question 7: Write the same query as in Question 6 using traditional join syntax.
+%%sql
+SELECT DISTINCT d.dog_guid,d.breed_group,u.state,u.zip
+FROM dogs d LEFT JOIN users u ON d.user_guid=u.user_guid
+WHERE breed_group IN ('Working', 'Sporting','Herding')
+
+
+Question 8: Earlier we examined unique users in the users table who were NOT in the dogs table. Use a NOT EXISTS clause to examine all the users in the
+dogs table that are not in the users table (you should get 2 rows in your output).
+%%sql
+SELECT COUNT(DISTINCT u.user_guid)
+FROM users u
+WHERE NOT EXISTS (SELECT * FROM dogs d WHERE d.user_guid=u.user_guid)
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

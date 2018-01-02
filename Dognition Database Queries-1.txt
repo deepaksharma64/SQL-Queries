@@ -1,0 +1,384 @@
+
+################################  MySQL_Exercise 01: Looking_at_Your_Data  #######################################################
+
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb
+%sql SHOW tables
+
+Question 1: How many columns does the "dogs" table have? Enter the appropriate query below to find out:
+%sql SHOW columns FROM dogs
+
+Question 2: Try using the DESCRIBE function to learn how many columns are in the "reviews" table:
+%sql DESCRIBE reviews
+
+Questions 3-6: In the cells below, examine the fields in the other 4 tables of the Dognition database:
+%sql DESCRIBE complete_tests
+%sql DESCRIBE exam_answers
+%sql DESCRIBE site_activities
+%sql DESCRIBE users
+
+
+Question 7: In the next cell, try entering a query that will let you see the first 10 rows of the breed column in the dogs table.
+%%sql
+SELECT breed
+FROM dogs LIMIT 10;
+
+
+Question 8: Try using the wild card to query the reviews table:
+%%sql
+SELECT*
+FROM dogs LIMIT 5,10;
+
+
+Question 9: Go ahead and try it, adding in a column to your output that shows you the original median_iti in minutes.
+%%sql
+SELECT median_iti_minutes / 60
+FROM dogs LIMIT 5, 10
+
+
+Question 10: How would you retrieve the first 15 rows of data from the dog_guid, subcategory_name, and test_name fields of the Reviews table, in that order?
+%%sql
+SELECT dog_guid,subcategory_name,test_name
+FROM reviews LIMIT 15;
+
+
+Question 11: How would you retrieve 10 rows of data from the activity_type, created_at, and updated_at fields of the site_activities table, 
+starting at row 50? What do you notice about the created_at and updated_at fields?
+%%sql
+SELECT activity_type,created_at,updated_at
+FROM site_activities LIMIT 49,10;
+
+
+Question 12: How would you retrieve 20 rows of data from all the columns in the users table, starting from row 2000? 
+What do you notice about the free_start_user field?
+%%sql
+SELECT*
+FROM users LIMIT 1999,20;
+
+
+##############################  MySQL Exercise 2: Using WHERE to select specific data ########################################################
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb
+
+Question 1: How would you select the Dog IDs for the dogs in the Dognition data set that were DNA tested(these should have a 
+1 in the dna_tested field of the dogs table)? Try it below (if you do not limit your output, your query should output data from 1433 dogs):
+%%sql
+SELECT dog_guid,dna_tested
+FROM dogs
+WHERE dna_tested=1;
+
+
+Question 2: How would you query the User IDs of customers who bought annual subscriptions, indicated by a "2" in the membership_type 
+field of the users table? (If you do not limit the output of this query, your output should contain 4919 rows.)
+%%sql
+SELECT user_guid,membership_type 
+FROM users
+WHERE membership_type=2
+
+
+Question 3: How would you query all the data from customers located in the state of North Carolina (abbreviated "NC") or New York 
+(abbreviated "NY")? If you do not limit the output of this query, your output should contain 1333 rows.
+%%sql
+SELECT*
+FROM users
+WHERE state IN ("NC","NY");
+
+
+Question 4: Now that you have seen how datetime data can be used to impose criteria on the data you select, how would you select
+all the Dog IDs and time stamps of Dognition tests completed before October 15, 2015 (your output should have 193,246 rows)?
+%%sql
+SELECT dog_guid, created_at
+FROM complete_tests
+WHERE created_at < '2015-10-15'
+
+
+Question 5: How would you select all the User IDs of customers who do not have null values in the State field of their demographic 
+information (if you do not limit the output, you should get 17,985 from this query -- there are a lot of null values in the state field!)?
+%%sql
+SELECT user_guid
+FROM users
+WHERE state IS NOT NULL;
+
+
+Question 6: How would you retrieve the Dog ID, subcategory_name, and test_name fields, in that order, of the first 10 reviews entered in 
+the Reviews table to be submitted in 2014?
+%%sql
+SELECT dog_guid, subcategory_name, test_name
+FROM reviews 
+WHERE YEAR(created_at)=2014 LIMIT 10;
+
+
+Question 7: How would you select all of the User IDs of customers who have female dogs whose breed includes the word "terrier" somewhere in 
+its name (if you don't limit your output, you should have 1771 rows in your output)?
+%%sql
+SELECT user_guid,gender,breed
+FROM dogs 
+WHERE gender='female' AND breed LIKE ("$terrier$");
+
+
+Question 8: How would you select the Dog ID, test name, and subcategory associated with each completed test for the first 100 tests entered in October, 2014?
+%%sql 
+SELECT dog_guid,test_name
+FROM complete_tests
+WHERE month(created_at)='10'AND year(created_at)='2014' LIMIT 100;
+
+####################################################### MySQL Exercise 3: Formatting Selected Data #############################################
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb
+
+
+Question 1: How would you change the title of the "start_time" field in the exam_answers table to "exam start time" in a query output? Try it below:
+%%sql
+SELECT start_time AS "exam start time"
+FROM exam_answers;
+
+
+Question 2: How would you list all the possible combinations of test names and subcategory names in complete_tests table? 
+(If you do not limit your output, you should retrieve 45 possible combinations)
+%%sql
+SELECT DISTINCT test_name, subcategory_name
+FROM complete_tests
+
+
+Question 3: Below, try executing a query that would sort the same output as described above by membership_type first in descending order,
+and state second in ascending order:
+%%sql
+SELECT DISTINCT user_guid,state,membership_type
+FROM users
+WHERE country="US" AND state IS NOT NULL and membership_type IS NOT NULL
+ORDER BY membership_type DESC, state ASC;
+
+
+Question 4: How would you get a list of all the subcategories of Dognition tests, in alphabetical order, with no test listed more than once 
+(if you do not limit your output, you should retrieve 16 rows)?
+%%sql
+SELECT DISTINCT subcategory_name
+FROM complete_tests
+ORDER BY subcategory_name;
+
+
+Question 5: How would you create a text file with a list of all the non-United States countries of Dognition 
+customers with no country listed more than once?
+non_us_countries= %sql SELECT DISTINCT country FROM users WHERE country !='US';
+non_us_countries.csv('non_us_countries.csv')
+
+
+Question 6: How would you find the User ID, Dog ID, and test name of the first 10 tests to ever be completed 
+in the Dognition database?
+%%sql
+SELECT user_guid,dog_guid,test_name,updated_at
+FROM complete_tests
+ORDER BY updated_at 
+LIMIT 10;
+
+
+Question 7: How would create a text file with a list of all the customers with yearly memberships who live in the state of North Carolina (USA) 
+and joined Dognition after March 1, 2014, sorted so that the most recent member is at the top of the list?
+NC_users=%sql SELECT DISTINCT user_guid,state,created_at FROM users WHERE membership_type = 2 AND state='NC' 
+AND MONTH(created_at)>02 AND YEAR(created_at)>2013 ORDER BY created_at DESC;  
+NC_users.csv("NC_users.csv")
+
+
+Question 8: See if you can find an SQL function from the list provided at:http://www.w3resource.com/mysql/mysql-functions-and-operators.php
+that would allow you to output all of the distinct breed names in UPPER case. Create a query that would output a list of these names in upper case,
+sorted in alphabetical order.
+%%sql
+SELECT DISTINCT UPPER(breed)
+FROM dogs 
+ORDER BY breed;
+#######################################################MySQL Exercise 4: Summarizing your Data#####################################################
+
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb
+
+
+Question 1: Try combining this query with a WHERE clause to find how many individual dogs completed tests after March 1, 2014 (the answer should be 13,289):
+%%sql
+SELECT COUNT(DISTINCT Dog_Guid)
+FROM complete_tests
+WHERE created_at >'2014-03-01'
+
+
+Question 2: To observe the second difference yourself first, count the number of rows in the dogs table using COUNT(*):
+%%sql
+SELECT COUNT(*)
+FROM dogs
+
+
+Question 3: Now count the number of rows in the exclude column of the dogs table:
+%%sql
+SELECT COUNT(exclude)
+FROM dogs
+
+
+Question 4: How many distinct dogs have an exclude flag in the dogs table (value will be "1")? (the answer should be 853)
+%%sql
+SELECT COUNT(exclude)
+FROM dogs
+WHERE exclude=1
+
+
+Question 5: What is the average, minimum, and maximum ratings given to "Memory versus Pointing" game? (Your answer should be 3.5584, 0, and 9, respectively)
+%%sql
+SELECT test_name,
+AVG(rating) AS AVG_rating,
+MIN(rating) AS MIN_rating,
+MAX(rating) AS MAX_rating
+FROM reviews
+WHERE test_name="Memory versus Pointing"
+
+
+Question 6: How would you query how much time it took to complete each test provided in the exam_answers table, in minutes?
+Title the column that represents this data "Duration."
+%%sql
+SELECT TIMESTAMPDIFF(MINUTE,start_time,end_time) AS Duration
+FROM exam_answers
+LIMIT 50
+
+
+Question 7: Include a column for Dog_Guid, start_time, and end_time in your query, and examine the output. Do you notice anything strange?
+%%sql
+SELECT dog_guid,TIMESTAMPDIFF(MINUTE,start_time,end_time) AS Duration
+FROM exam_answers
+LIMIT 1000
+
+
+Question 8: What is the average amount of time it took customers to complete all of the tests in the exam_answers table, if you do not exclude 
+any data (the answer will be approximately 587 minutes)?
+%%sql
+SELECT AVG(TIMESTAMPDIFF(MINUTE,start_time,end_time))
+FROM exam_answers
+
+
+Question 9: What is the average amount of time it took customers to complete the "Treat Warm-Up" test, according to the exam_answers table 
+(about 165 minutes, if no data is excluded)?
+%%sql
+SELECT AVG(TIMESTAMPDIFF(MINUTE,start_time,end_time))
+FROM exam_answers
+WHERE test_name="Treat Warm-Up"
+
+
+Question 10: How many possible test names are there in the exam_answers table?
+%%sql
+SELECT COUNT(DISTINCT test_name)
+FROM exam_answers
+
+
+Question 11: What is the minimum and maximum value in the Duration column of your query that included the data from the entire table?
+%%sql
+SELECT MAX(TIMESTAMPDIFF(MINUTE,start_time,end_time)),
+MIN(TIMESTAMPDIFF(MINUTE,start_time,end_time))
+FROM exam_answers
+
+
+Question 12: How many of these negative Duration entries are there? (the answer should be 620)
+%%sql
+SELECT COUNT(TIMESTAMPDIFF(MINUTE,start_time,end_time))
+FROM exam_answers
+WHERE TIMESTAMPDIFF(MINUTE,start_time,end_time)<0
+
+
+Question 13: How would you query all the columns of all the rows that have negative durations so that you could examine whether they share any 
+features that might give you clues about what caused the entry mistake?
+%%sql
+SELECT *
+FROM exam_answers
+WHERE TIMESTAMPDIFF(MINUTE,start_time,end_time)<0
+LIMIT 10
+
+
+Question 14: What is the average amount of time it took customers to complete all of the tests in the exam_answers table when the negative 
+durations are excluded from your calculation (you should get 11233 minutes)?
+%%sql
+SELECT AVG(TIMESTAMPDIFF(MINUTE,start_time,end_time))
+FROM exam_answers
+WHERE TIMESTAMPDIFF(MINUTE,start_time,end_time)>0
+#############################################################MySQL Exercise 5: Summaries of Groups of Data##############################################
+
+%load_ext sql
+%sql mysql://studentuser:studentpw@mysqlserver/dognitiondb
+%sql USE dognitiondb
+
+
+Question 1: Output a table that calculates the number of distinct female and male dogs in each breed group of the Dogs table, sorted by the total number
+ of dogs in descending order (the sex/breed_group pair with the greatest number of dogs should have 8466 unique Dog_Guids):
+%%sql 
+SELECT gender,breed_group, COUNT(DISTINCT dog_guid) AS total_ids
+FROM dogs
+GROUP BY gender,breed_group
+ORDER BY total_ids DESC
+
+
+Question 2: Revise the query your wrote in Question 1 so that it uses only numbers in the GROUP BY and ORDER BY fields.
+%%sql 
+SELECT gender,breed_group, COUNT(DISTINCT dog_guid) AS total_ids
+FROM dogs
+GROUP BY 1,2
+ORDER BY 3 DESC
+
+
+Question 3: Revise the query your wrote in Question 2 so that it (1) excludes the NULL and empty string entries in the breed_group field, and (2) excludes 
+any groups that don't have at least 1,000 distinct Dog_Guids in them. Your result should contain 8 rows. (HINT:sometimes empty strings are registered as 
+non-NULL values. You might want to include the following line somewhere in your query to exclude these values as well):
+%%sql 
+SELECT gender,breed_group, COUNT(DISTINCT dog_guid) AS total_ids
+FROM dogs
+WHERE breed_group !="" AND breed_group IS NOT NULL AND breed_group !="None"
+GROUP BY 1,2
+HAVING COUNT(DISTINCT dog_guid)>=1000
+ORDER BY 3 DESC
+
+
+Question 4: Write a query that outputs the average number of tests completed and average mean inter-test-interval for every breed type, sorted by the average 
+number of completed tests in descending order (popular hybrid should be the first row in your output).
+%%sql
+SELECT breed_type,AVG(total_tests_completed) AS Average_no,AVG(mean_iti_minutes) as Mean_min
+FROM dogs
+GROUP BY breed_type
+ORDER BY Average_no DESC
+
+
+Question 5: Write a query that outputs the average amount of time it took customers to complete each type of test where any individual 
+reaction times over 6000 hours are excluded and only average 
+reaction times that are greater than 0 seconds are included (your output should end up with 67 rows).
+%%sql
+SELECT test_name,AVG(TIMESTAMPDIFF(HOUR,start_time,end_time)) AS Avg_time
+FROM exam_answers
+WHERE TIMESTAMPDIFF(HOUR,start_time,end_time)<6000
+GROUP BY test_name
+HAVING AVG(TIMESTAMPDIFF(SECOND,start_time,end_time))>0
+ORDER BY 2 DESC
+
+
+Question 6: Write a query that outputs the total number of unique User_Guids in each combination of State and ZIP code (postal code) 
+in the United States, sorted first by state name in ascending alphabetical order, and second by total number of unique User_Guids 
+in descending order (your first state should be AE and there should be 5043 rows in total in your output).
+%%sql
+SELECT COUNT(DISTINCT user_guid) AS User_Id,state,zip 
+FROM users
+WHERE country="US"
+GROUP BY state,zip 
+ORDER BY state ASC,User_Id DESC
+
+
+Question 7: Write a query that outputs the total number of unique User_Guids in each combination of State and ZIP code in the United States 
+that have at least 5 users, sorted first by state name in ascending alphabetical order, and second by total 
+number of unique User_Guids in descending order (your first state/ZIP code combination should be AZ/86303).
+%%sql
+SELECT COUNT(DISTINCT user_guid) AS User_Id,state,zip 
+FROM users
+WHERE country="US"
+GROUP BY state,zip 
+HAVING User_Id>=5
+ORDER BY state ASC,User_Id DESC
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+

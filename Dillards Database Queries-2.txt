@@ -1,0 +1,237 @@
+                           *************************2nd set of queris*****************************
+
+********************************************************************
+SELECT str.state, str.city, sku.dept, SUM(t.amt) AS Total_Sales
+FROM strinfo str, skuinfo sku, trnsact t
+WHERE t.store=str.store AND t.sku = sku.sku
+GROUP BY str.state, str.city, sku.dept
+ORDER BY str.state, str.city, sku.dept
+****************************************************************************
+QUESTION Exercise 1: (a) Use COUNT and DISTINCT to determine how many distinct skus there are in pairs of the
+skuinfo, skstinfo, and trnsact tables. Which skus are common to pairs of tables, or unique to specific
+tables?
+
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT b.sku)
+FROM trnsact a,skstinfo b,skuinfo c
+WHERE a.sku=b.sku AND b.sku=c.sku
+---ANSWER:542513 
+*****************************************************************************
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT b.sku)
+FROM trnsact a,skstinfo b
+WHERE a.sku=b.sku  
+----ANSWER: 542513
+*****************************************************************************
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT a.sku)
+FROM trnsact a,skuinfo c
+WHERE a.sku=c.sku  
+----ANSWER: 714499
+*****************************************************************************
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT b.sku)
+FROM skstinfo b,skuinfo c
+WHERE b.sku=c.sku  
+----ANSWER:  760212
+*****************************************************************************        
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT sku)
+FROM trnsact a
+----ANSWER: 714499 OF 120,916,896   
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT sku)
+FROM skstinfo b
+----ANSWER:  760212 OF 39,230,146
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT sku)
+FROM skuinfo c
+----ANSWER:  1,564,178 OF 1,564,178
+******************************************************************************
+(b) Use COUNT to determine how many instances there are of each sku associated with each store in the
+skstinfo table and the trnsact table?
+
+DATABASE ua_dillards;
+SELECT COUNT(sku),COUNT(store),sku,store
+FROM skstinfo b
+GROUP BY store,sku   
+ORDER BY COUNT(sku) DESC  
+---ANSWER---
+COUNT(sku)  COUNT(store)   sku     store
+    1          1         4549010    1403
+    1          1         6410385    402
+    1          1         2089677    302
+    -          -         -------    ---
+    -          -         -------    ---
+DATABASE ua_dillards;
+SELECT COUNT(sku),COUNT(store),sku,store
+FROM trnsact c
+GROUP BY store,sku   
+ORDER BY COUNT(sku) DESC     
+---ANSWER---
+COUNT(sku)  COUNT(store)   sku     store
+7933        7933         4628597    504
+7607        7607         5268597    2409
+6884        6884         4628597    8402
+----        ----         -------    ----
+----        ----         -------    ----
+******************************************************************************************************
+Exercise 2: (a) Use COUNT and DISTINCT to determine how many distinct stores there are in the
+strinfo, store_msa, skstinfo, and trnsact tables.
+
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT d.store)
+FROM strinfo d   ANSWER:453
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT e.store)
+FROM store_msa e  ANSWER:333
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT b.store)
+FROM skstinfo b ANSWER:357
+DATABASE ua_dillards;
+SELECT COUNT(DISTINCT a.store)
+FROM trnsact a ANSWER:332
+********************************************************************************************************
+(b) Which stores are common to all four tables, or unique to specific tables?
+DATABASE ua_dillards;
+SELECT d.store,b.store,a.store,e.store,COUNT(d.store),COUNT(b.store),COUNT(a.store),COUNT(e.store)
+FROM ((strinfo d LEFT JOIN skstinfo b ON d.store=b.store) LEFT JOIN trnsact a ON b.store=a.store AND b.sku=a.sku) LEFT JOIN store_msa e ON a.store=e.store
+GROUP BY d.store,b.store,a.store,e.store     
+ORDER BY d.store  
+----------------------
+67,---,---,---,1,0,0,0
+100,100,---,---,,1325,1325,0,0
+102,102,102,102,334325,334325,334325,334325
+-------------------------------------------
+***********************************************************************************************************
+Exercise 3: It turns out there are many skus in the trnsact table that are not in the skstinfo table. As a
+consequence, we will not be able to complete many desirable analyses of Dillard’s profit, as opposed to
+revenue, because we do not have the cost information for all the skus in the transact table (recall that
+profit = revenue - cost). Examine some of the rows in the trnsact table that are not in the skstinfo table;
+can you find any common features that could explain why the cost information is missing?
+
+SELECT TOP 100* 
+FROM trnsact a LEFT JOIN skstinfo b ON a.sku=b.sku AND a.store=b.store
+WHERE b.sku IS NULL
+*************************************************************************************************************
+Exercise 4: Although we can’t complete all the analyses we’d like to on Dillard’s profit, we can look at
+general trends. What is Dillard’s average profit per day?    
+
+DATABASE ua_dillards;
+SELECT a.register,SUM((a.sprice-b.cost)*a.quantity)/COUNT(DISTINCT a.saledate) AS avgprofit
+FROM trnsact a LEFT JOIN skstinfo b ON a.sku=b.sku AND a.store=b.store
+WHERE a.stype='p'
+GROUP BY a.register
+ORDER BY a.register DESC
+***************************************************************************************************************
+Exercise 5: On what day was the total value (in $) of returned goods the greatest? On what day was the
+total number of individual returned items the greatest?   
+ 
+DATABASE ua_dillards;
+SELECT SUM(a.amt)as return_total,a.saledate
+FROM trnsact a
+WHERE a.stype='r'
+GROUP BY a.saledate
+ORDER BY Return_total DESC
+--ANSWER: 3030259.76  04/12/27--  
+
+DATABASE ua_dillards;
+SELECT SUM(a.quantity)as return_total,a.saledate
+FROM trnsact a
+WHERE a.stype='r'
+GROUP BY a.saledate
+ORDER BY Return_total DESC   
+---ANSWER: 82512 04/12/27----
+*****************************************************************************************************************
+Exercise 6: What is the maximum price paid for an item in our database? What is the minimum price
+paid for an item in our database?
+
+DATABASE ua_dillards;
+SELECT MAX(a.amt)AS maxi,MIN(a.amt)AS mini
+FROM trnsact a
+WHERE a.stype='p' AND a.quantity=1
+---ANSWER: MAX:6017.00 MIN:0.00---
+******************************************************************************************************************
+Exercise 7: How many departments have more than 100 brands associated with them, and what are their
+descriptions?
+
+DATABASE ua_dillards;
+SELECT COUNT(c.dept),f.deptdesc,f.dept
+FROM skuinfo c LEFT JOIN deptinfo f ON c.dept=f.dept
+GROUP BY f.deptdesc,f.dept
+HAVING COUNT(DISTINCT c.brand)>=100
+---ANSWER---TOTAL 3 DEPARTMENTS
+ResultsSQL
+COUNT(DEPT)
+DEPTDESC
+DEPT
+34066 ENVIRON 4407
+38796 COLEHAAN 5203
+11547 CARTERS 7104
+***************************************************************************************************************
+Exercise 8: Write a query that retrieves the department descriptions of each of the skus in the skstinfo
+table.
+DATABASE ua_dillards;
+SELECT DISTINCT b.sku,f.deptdesc
+FROM (SKSTINFO b LEFT JOIN skuinfo c ON b.sku=c.sku) LEFT JOIN deptinfo f ON c.dept=f.dept
+WHERE b.sku=5020024   ---LESLIE----remove this line to get all the sku's deptdesc-----
+ORDER BY b.sku DESC
+---ANSWER---
+3  STJOHN
+4  ECHO
+8  CITIZENS
+15 BEP
+*******************************************************************************************************************
+Exercise 9: What department (with department description), brand, style, and color had the greatest total
+value of returned items?
+
+DATABASE ua_dillards;
+SELECT  c.dept,f.deptdesc,c.brand,c.style,c.color,SUM(a.amt) 
+FROM (trnsact a LEFT JOIN skuinfo c ON a.sku=c.sku) LEFT JOIN deptinfo f ON c.dept=f.dept
+WHERE a.stype='r'
+GROUP BY c.dept,f.deptdesc,c.brand,c.style,c.color
+ORDER BY SUM(a.amt) DESC
+---ANSWER:-----
+4505 POLOMEN POLO FAS 4GZ 782633 U KHAKI 216633.59
+7307 SIGRID-O NOBLE EX HMANO ENGLIS ROSE 202424.05
+7307 SIGRID-O NOBLE EX CHLOE PETAL PINK 190183.61
+7307 SIGRID-O NOBLE EX 3133 SAND 187096.67
+2200 CELEBRT LANCOME   1042 00-NONE 177142.50
+--------------------------------------------------
+--------------------------------------------------
+*********************************************************************************************************************
+Exercise 10: In what state and zip code is the store that had the greatest total revenue during the time
+period monitored in our dataset?
+
+DATABASE ua_dillards;
+SELECT  e.state,e.city,e.zip,sum(a.amt)  
+FROM trnsact a LEFT JOIN store_msa e ON a.store=e.store
+WHERE a.stype='p'
+GROUP BY e.state,e.city,e.zip
+ORDER BY SUM(a.amt) DESC
+---ANSWER:---
+LA METAIRIE 70002 24171426.58
+AR LITTLE ROCK 72205 22792579.65
+TX MCALLEN 78501 22331884.55
+TX DALLAS 75225 22063797.73
+KY LOUISVILLE 40207 20114154.20
+TX HOUSTON 77056 19040376.84
+KS OVERLAND PARK 66214 18642976.76
+OK OKLAHOMA CITY 73118 18458644.39
+TX SAN ANTONIO 78216 18455775.63
+TX HURST 76053 17740181.20
+TX FRIENDSWOOD 77546 17620473.33
+AR MABELVALE 72103 17537161.54
+TX AUSTIN 78746 17388481.69
+--------------------------------------
+--------------------------------------
+**********************************************************************************************************************************
+
+
+
+
+
+
+
+
+  

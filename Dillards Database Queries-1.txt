@@ -1,0 +1,99 @@
+                                   ***************1st set of queries********************
+8 What is the color of the Liz Claiborne brand item with the highest SKU # in the Dillard’s database (the Liz Claiborne brand is abbreviated “LIZ CLAI” in the Dillard’s database)?
+ANSWER:TEAK CBO
+
+----SQLQUERY------
+DATABASE ua_dillards;
+SELECT TOP 10*
+FROM SKUINFO
+WHERE brand LIKE '%LIZ CLAI%'
+ORDER BY SKU DESC
+-------------------
+
+9 What aspect of the following query will make the query crash?
+ANSWER:There is a comma after "amt" in the first line of the query
+-----SQLQUERY-----
+DATABASE ua_dillards;
+SELECT SKU, orgprice, sprice, amt
+FROM TRNSACT
+WHERE AMT>50
+------------------
+
+10 What is the sku number of the item in the Dillard’s database that had the highest original sales price?
+ANSWER:6200173
+-------SQLQUERY------
+DATABASE ua_dillards;
+SELECT TOP 10*
+FROM trnsact
+ORDER BY orgprice DESC
+----------------------
+
+11 According to the strinfo table, in how many states within the United States are Dillard’s stores located? 
+(HINT: The bottom of the SQL scratchpad reports the number of rows in your output)
+ANSWER:31
+------SQLQUERY--------
+DATABASE ua_dillards;
+SELECT DISTINCT state
+FROM STRINFO
+----------------------
+
+12 How many Dillard’s departments start with the letter “e”
+ANSWER:5
+------SQLQUERY-------------
+DATABASE ua_dillards;
+SELECT DISTINCT deptdesc
+FROM deptinfo
+WHERE deptdesc LIKE 'e%' 
+----------------------------
+
+13 What was the date of the earliest sale in the database where the sale price of the item did not equal the original price
+ of the item, and what was the largest margin (original price minus sale price) of an item sold on that earliest date?
+ANSWER:04/08/01, $510.00
+------SQLQUERY----------
+DATABASE ua_dillards;
+SELECT top 10* 
+FROM trnsact
+where (orgprice-sprice)<>0
+ORDER BY saledate ASC
+
+DATABASE ua_dillards;
+SELECT top 10* 
+FROM trnsact
+WHERE saledate='2004-08-01'
+ORDER BY (orgprice-sprice) DESC
+------------------------
+14 What register number made the sale with the highest original price and highest sale price between the dates of August 1, 
+2004 and August 10, 2004? Make sure to sort by original price first and sale price second.
+ANSWER:621
+-----SQLQUERY-------------
+DATABASE ua_dillards;
+SELECT top 10* 
+FROM trnsact
+WHERE saledate BETWEEN '2004-08-01' AND '2004-08-10'
+ORDER BY orgprice DESC
+
+DATABASE ua_dillards;
+SELECT top 10* 
+FROM trnsact
+WHERE saledate BETWEEN '2004-08-01' AND '2004-08-10'
+ORDER BY sprice DESC
+--------------------------
+15 Which of the following brand names with the word/letters “liz” in them exist in the Dillard’s database? Select all that apply. 
+Note that you will need more than a single correct selection to answer the question correctly.
+ANSWER:BELIZA,CIVILIZE
+-------SQLQUERY-----------
+DATABASE ua_dillards;
+SELECT DISTINCT brand 
+FROM skuinfo
+WHERE brand LIKE '%liz%' 
+--------------------------
+16 What is the lowest store number of all the stores in the STORE_MSA table that are in the city of “little rock”,”memphis”, or “tulsa”?
+ANSWER: 504
+-------SQLQUERY------------
+DATABASE ua_dillards;
+SELECT top 10* 
+FROM store_msa
+WHERE city='little rock' OR city='memphis' OR city='tulsa'
+ORDER BY store ASC
+---------------------------
+                               
